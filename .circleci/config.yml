@@ -15,7 +15,7 @@ jobs:
       - run:
           name: Generate config
           command: |
-            bundle exec ruby generate_config.rb
+            ruby generate_config.rb
       - continuation/continue:
           configuration_path: generated_config.yml
 
