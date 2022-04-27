@@ -8,6 +8,8 @@ orbs:
 jobs:
   setup:
     executor: continuation/default
+    docker:
+      - image: cimg/ruby:2.7.4
     steps:
       - checkout
       - run:
