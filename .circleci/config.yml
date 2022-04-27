@@ -7,7 +7,6 @@ orbs:
 
 jobs:
   setup:
-    executor: continuation/default
     docker:
       - image: cimg/ruby:2.7.4
     steps:
@@ -17,7 +16,7 @@ jobs:
           command: |
             ruby .circleci/generate_config.rb
       - continuation/continue:
-          configuration_path: .circleci/generated_config.yml
+          configuration_path: .circleci/config-generated.yml
 
 workflows:
   setup:
