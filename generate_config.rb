@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'yaml'
 
 current_branch = `git rev-parse --abbrev-ref HEAD`
@@ -19,7 +21,7 @@ if head == base
     # current commit as merge base. In that case try to go back to the
     # first parent, i.e. the last state of this branch before the merge, and use that as the base.
     base = `git rev-parse HEAD~1`.force_encoding('utf-8').strip
-  rescue
+  rescue StandardError
     # This can fail if this is the first commit of the repo, so that
     # HEAD~1 actually doesn't resolve. In this case we can compare
     # against this magic SHA below, which is the empty tree. The diff
@@ -31,7 +33,6 @@ end
 puts "Comparing #{base}...#{head}"
 
 changes = `git diff --name-only #{base} #{head}`.force_encoding('utf-8').split("\n")
-
 
 jobs << <<-YAML
       - test_gem_rspec:
@@ -49,5 +50,3 @@ jobs << <<-YAML
 YAML
 
 puts "=============> changes: #{changes.inspect}"
-
-
