@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require 'yaml'
 
 current_branch = `git rev-parse --abbrev-ref HEAD`
@@ -10,7 +8,7 @@ end
 
 head = ENV['CIRCLE_SHA1'] || current_branch
 base_revision = 'base-js'
-# checkout(base_revision)  # Checkout base revision to make sure it is available for comparison
+checkout(base_revision)  # TODO: comment this line to run at your local
 checkout(head) # return to head commit
 
 base = `git merge-base #{base_revision} #{head}`.force_encoding('utf-8').strip
@@ -21,7 +19,7 @@ if head == base
     # current commit as merge base. In that case try to go back to the
     # first parent, i.e. the last state of this branch before the merge, and use that as the base.
     base = `git rev-parse HEAD~1`.force_encoding('utf-8').strip
-  rescue StandardError
+  rescue
     # This can fail if this is the first commit of the repo, so that
     # HEAD~1 actually doesn't resolve. In this case we can compare
     # against this magic SHA below, which is the empty tree. The diff
@@ -34,19 +32,32 @@ puts "Comparing #{base}...#{head}"
 
 changes = `git diff --name-only #{base} #{head}`.force_encoding('utf-8').split("\n")
 
-jobs << <<-YAML
-      - test_gem_rspec:
-          name: #{test_gem_job}
-          <<: *default_context
-          gem_name: #{gem_name}
-          gem_type: #{gem_type}
-          executor_name: #{params[:executor] || 'null'}
-          nodejs_utils_version: #{params[:nodejs_utils_version] || 'null'}
-      - test_gem_sorbet:
-          name: #{test_gem_sorbet_job}
-          <<: *default_context
-          gem_name: #{gem_name}
-          gem_type: #{gem_type}
+puts "=============> changes: #{changes.inspect}"
+
+run_ruby_test = false
+run_js_test = false
+
+changes.each do |c|
+  if /\.js$/ =~ c
+    run_js_test = true
+  end
+
+  if /\.rb$/ =~ c
+    run_ruby_test = true
+  end
+end
+
+params = <<~YAML
+parameters:
+  run_ruby_test:
+    type: boolean
+    default: #{run_ruby_test}
+  run_js_test:
+    type: boolean
+    default: #{run_js_test}
 YAML
 
-puts "=============> changes: #{changes.inspect}"
+template = File.read(File.join(__dir__, 'config-template.yml'))
+config = [template, params].join("\n")
+
+File.write(File.join(__dir__, 'config-generated.yml'), config)
